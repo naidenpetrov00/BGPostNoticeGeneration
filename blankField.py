@@ -39,9 +39,13 @@ class BlankFields:
         return {
             self.RECEIVER_GENERAL_INFO: generalInfo,
             self.ADDRESS: row[readData.adressProp],
-            self.SENDER: self.sender,
-            self.SENDER_ADDRESS: self.sender_address,
-            self.SENDER_CITY: self.sender_city,
+            self.SENDER: (self.sender, "/OpenSans", 10),
+            self.SENDER_ADDRESS: (
+                self.sender_address,
+                "/LiberationSans",
+                10,
+            ),
+            self.SENDER_CITY: (self.sender_city, "/OpenSans", 10),
             self.DOCUMENT_NUMBER: document_number,
             self.BARCODE: barcode.get_full_barcode(),
         }

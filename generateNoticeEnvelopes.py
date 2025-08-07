@@ -7,7 +7,7 @@ from envelopeField import EnvelopeField
 from blankField import BlankFields
 from readData import readExcelFiles
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import NameObject, BooleanObject, TextStringObject
+from pypdf.generic import NameObject, BooleanObject, TextStringObject, DictionaryObject
 import readData
 import argparse
 
@@ -19,7 +19,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-blank_path = "./blanks/243_form_test_fonts_v6.pdf"
+blank_path = "./blanks/243_Open_Sans_v2.pdf"
 envelope_path = "./blanks/Letter_C5_v1.pdf"
 
 output_folder = "./notices"
@@ -96,27 +96,6 @@ for file_df in files:
         env_fields = envelope.get_fields()
         output_envelope_pdf.append(envelope)
 
-        # output_pdf = PdfWriter()
-        # output_pdf.append_pages_from_reader(blank)
-
-        if "/AcroForm" in blank_reader.trailer["/Root"]:  # type: ignore
-            output_pdf._root_object.update(
-                {
-                    NameObject("/AcroForm"): blank_reader.trailer["/Root"]["/AcroForm"],  # type: ignore
-                    NameObject("/NeedAppearances"): BooleanObject(True),
-                }
-            )
-
-        # output_envelope_pdf = PdfWriter()
-        # output_envelope_pdf.append_pages_from_reader(envelope)
-
-        if "/AcroForm" in envelope.trailer["/Root"]:  # type: ignore
-            output_envelope_pdf._root_object.update(
-                {
-                    NameObject("/AcroForm"): envelope.trailer["/Root"]["/AcroForm"]  # type: ignore
-                }
-            )
-
         if args.mode == "pair":
             if i % 2 == 0:
                 prev_row_doc_number = document_number
@@ -148,26 +127,25 @@ for file_df in files:
                 output_pdf.pages[0],
                 blank_fields.getFieldValues(row, barcode),
                 auto_regenerate=False,
-                flatten=True,
+                # flatten=False,
             )
 
             output_envelope_pdf.update_page_form_field_values(
                 output_envelope_pdf.pages[0],
                 envelope_fields.getFieldValues(row, barcode),
                 auto_regenerate=False,
-                flatten=False,
+                flatten=True,
             )
 
-            output_pdf.reattach_fields()
+            # output_pdf.reattach_fields()
             print(output_pdf.get_form_text_fields())
             print(output_pdf.get_fields())
-            output_pdf._root_object.update(
-                {
-                    NameObject("/NeedAppearances"): BooleanObject(True),
-                    
-                }
-            )
-            print(blank_reader.trailer["/Root"]["/AcroForm"]["/DA"]) # type: ignore
+            # output_pdf._root_object.update(
+            #     {
+            #         NameObject("/NeedAppearances"): BooleanObject(True),
+            #     }
+            # )
+            print(output_pdf._root_object["/AcroForm"]["/DA"])  # type: ignore
             # output_envelope_pdf._root_object.update({
             #     NameObject("/NeedAppearances"): BooleanObject(True)
             # })
