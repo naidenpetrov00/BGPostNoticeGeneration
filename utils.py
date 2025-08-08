@@ -1,7 +1,7 @@
 from datetime import date
 from pathlib import Path
 import subprocess
-from pypdf import PdfReader, PdfWriter
+from pypdf import PdfMerger, PdfReader, PdfWriter
 
 
 def create_single_page_pdf(input_path, output_path, page_index=0):
@@ -60,3 +60,15 @@ def regen_appearances_batch(processed_paths: list[str]):
             print(f"Regenerated appearances for {len(processed_paths)} PDFs")
         except subprocess.CalledProcessError as e:
             print(f"Batch regeneration failed: {e}")
+
+
+def merge_pdfs(pdf_paths: list[str], out_path: str):
+    if not pdf_paths:
+        return
+    merger = PdfWriter()
+    for p in pdf_paths:
+        merger.append(str(p)) # type: ignore
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "wb") as f:
+        merger.write(f) # type: ignore
+    merger.close() # type: ignore

@@ -4,6 +4,7 @@ from pandas import Series
 import pandas as pd
 from utils import (
     log_the_last_number,
+    merge_pdfs,
     regen_appearances_batch,
     regenerate_pdf_appearance,
     write_to_pdf,
@@ -79,6 +80,8 @@ def updateTable(row: Series, barcode: BarCode):
 prev_row_doc_number = None
 
 processed_paths = []
+notice_paths: list[str] = []
+envelope_paths: list[str] = []
 
 for file_df in files:
     for i, (index, row) in enumerate(file_df.iterrows()):
@@ -119,11 +122,9 @@ for file_df in files:
 
                 updateTable(row, barcode)
                 write_to_pdf(output_pdf, output_path)
-                processed_paths.append(str(Path(output_path).resolve()))
-                # regenerate_pdf_appearance(output_path)
+                notice_paths.append(str(Path(output_path).resolve()))
                 write_to_pdf(output_envelope_pdf, output_envelope_path)
-                processed_paths.append(str(Path(output_envelope_path).resolve()))
-                # regenerate_pdf_appearance(output_envelope_path)
+                envelope_paths.append(str(Path(output_envelope_path).resolve()))
 
         elif args.mode == "single":
             barcode = BarCode()
@@ -141,13 +142,18 @@ for file_df in files:
 
             updateTable(row, barcode)
             write_to_pdf(output_pdf, output_path)
-            processed_paths.append(str(Path(output_path).resolve()))
-            # regenerate_pdf_appearance(output_path)
+            notice_paths.append(str(Path(output_path).resolve()))
             write_to_pdf(output_envelope_pdf, output_envelope_path)
-            processed_paths.append(str(Path(output_envelope_path).resolve()))
-            # regenerate_pdf_appearance(output_envelope_path)
+            envelope_paths.append(str(Path(output_envelope_path).resolve()))
 
-regen_appearances_batch(processed_paths)
+regen_appearances_batch(notice_paths + envelope_paths)
+
+notices_merged_path = f"{output_folder}/notices_ALL_{today_date}.pdf"
+merge_pdfs(notice_paths, notices_merged_path)
+
+# Merge all envelopes into one big PDF
+envelopes_merged_path = f"{envelope_output_folder}/envelopes_ALL_{today_date}.pdf"
+merge_pdfs(envelope_paths, envelopes_merged_path)
 
 log_the_last_number()
 results_df.to_excel(f"{output_folder}/noticesTable{today_date}.xlsx", index=False)
