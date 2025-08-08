@@ -1,4 +1,6 @@
 from datetime import date
+from pathlib import Path
+import subprocess
 from pypdf import PdfReader, PdfWriter
 
 
@@ -24,5 +26,37 @@ def log_the_last_number():
     today = date.today().isoformat()
     new_line = f"{today}: {number}\n"
 
-    with open(last_number_log_path,'a') as a:
+    with open(last_number_log_path, "a") as a:
         a.write(new_line)
+
+
+JS_DIR = Path(__file__).parent / "js_script"
+REGEN_SCRIPT = JS_DIR / "regen-appearances.js"
+BATCH_JS = JS_DIR / "regen_appearances_batch.js"
+
+
+def regenerate_pdf_appearance(pdf_path: str):
+    """Run the Node script to rebuild /AP for a single PDF (in place)."""
+    full_path = str(Path(pdf_path).resolve())
+    try:
+        subprocess.run(
+            ["node", str(REGEN_SCRIPT), full_path, full_path],
+            check=True,
+            cwd=str(JS_DIR),
+        )
+        print(f"Appearance regenerated: {full_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to regenerate {full_path}: {e}")
+
+
+def regen_appearances_batch(processed_paths: list[str]):
+    if processed_paths:
+        try:
+            subprocess.run(
+                ["node", str(BATCH_JS), *processed_paths],
+                check=True,
+                cwd=str(JS_DIR), 
+            )
+            print(f"Regenerated appearances for {len(processed_paths)} PDFs")
+        except subprocess.CalledProcessError as e:
+            print(f"Batch regeneration failed: {e}")

@@ -1,7 +1,13 @@
 import datetime as date
+from pathlib import Path
 from pandas import Series
 import pandas as pd
-from utils import log_the_last_number, write_to_pdf
+from utils import (
+    log_the_last_number,
+    regen_appearances_batch,
+    regenerate_pdf_appearance,
+    write_to_pdf,
+)
 from barcode import BarCode
 from envelopeField import EnvelopeField
 from blankField import BlankFields
@@ -72,6 +78,8 @@ def updateTable(row: Series, barcode: BarCode):
 
 prev_row_doc_number = None
 
+processed_paths = []
+
 for file_df in files:
     for i, (index, row) in enumerate(file_df.iterrows()):
         adress = row[readData.adressProp]
@@ -83,18 +91,15 @@ for file_df in files:
             continue
 
         blank_reader = PdfReader(blank_path)
-        envelope = PdfReader(envelope_path)
+        envelope_reader = PdfReader(envelope_path)
         output_path = f"{output_folder}/{index}_{case_number}.pdf"
         output_envelope_path = (
             f"{envelope_output_folder}/{index}_{case_number}_envelope.pdf"
         )
         output_pdf = PdfWriter()
         output_envelope_pdf = PdfWriter()
-        blank_page = blank_reader.pages[0]
         output_pdf.append(blank_reader)
-        fields = blank_reader.get_fields()
-        env_fields = envelope.get_fields()
-        output_envelope_pdf.append(envelope)
+        output_envelope_pdf.append(envelope_reader)
 
         if args.mode == "pair":
             if i % 2 == 0:
@@ -104,22 +109,21 @@ for file_df in files:
                 output_pdf.update_page_form_field_values(
                     output_pdf.pages[0],
                     blank_fields.getFieldValues(row, barcode, prev_row_doc_number),
+                    auto_regenerate=False,
                 )
                 output_envelope_pdf.update_page_form_field_values(
                     output_envelope_pdf.pages[0],
                     envelope_fields.getFieldValues(row, barcode),
+                    auto_regenerate=False,
                 )
 
-                output_pdf._root_object.update(
-                    {NameObject("/NeedAppearances"): BooleanObject(True)}
-                )
-                # output_envelope_pdf._root_object.update({
-                #     NameObject("/NeedAppearances"): BooleanObject(True)
-                # })
                 updateTable(row, barcode)
-
                 write_to_pdf(output_pdf, output_path)
+                processed_paths.append(str(Path(output_path).resolve()))
+                # regenerate_pdf_appearance(output_path)
                 write_to_pdf(output_envelope_pdf, output_envelope_path)
+                processed_paths.append(str(Path(output_envelope_path).resolve()))
+                # regenerate_pdf_appearance(output_envelope_path)
 
         elif args.mode == "single":
             barcode = BarCode()
@@ -127,32 +131,23 @@ for file_df in files:
                 output_pdf.pages[0],
                 blank_fields.getFieldValues(row, barcode),
                 auto_regenerate=False,
-                # flatten=False,
             )
 
             output_envelope_pdf.update_page_form_field_values(
                 output_envelope_pdf.pages[0],
                 envelope_fields.getFieldValues(row, barcode),
                 auto_regenerate=False,
-                flatten=True,
             )
-
-            # output_pdf.reattach_fields()
-            print(output_pdf.get_form_text_fields())
-            print(output_pdf.get_fields())
-            # output_pdf._root_object.update(
-            #     {
-            #         NameObject("/NeedAppearances"): BooleanObject(True),
-            #     }
-            # )
-            print(output_pdf._root_object["/AcroForm"]["/DA"])  # type: ignore
-            # output_envelope_pdf._root_object.update({
-            #     NameObject("/NeedAppearances"): BooleanObject(True)
-            # })
 
             updateTable(row, barcode)
             write_to_pdf(output_pdf, output_path)
+            processed_paths.append(str(Path(output_path).resolve()))
+            # regenerate_pdf_appearance(output_path)
             write_to_pdf(output_envelope_pdf, output_envelope_path)
+            processed_paths.append(str(Path(output_envelope_path).resolve()))
+            # regenerate_pdf_appearance(output_envelope_path)
+
+regen_appearances_batch(processed_paths)
 
 log_the_last_number()
 results_df.to_excel(f"{output_folder}/noticesTable{today_date}.xlsx", index=False)

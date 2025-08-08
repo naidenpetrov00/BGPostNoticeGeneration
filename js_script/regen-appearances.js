@@ -1,33 +1,41 @@
 import { PDFDocument } from "pdf-lib";
+import { checkIfBarcode } from "./utils.js";
 import fontkit from "@pdf-lib/fontkit";
 import fs from "fs";
 
 const inputPath = process.argv[2];
 const outputPath = process.argv[3];
-const fontPath = "/home/naidenpetrov00/Fonts/OpenSans-Regular.ttf";
+const openSansFontPath = "./fonts/OpenSans-Regular.ttf";
+const libreBarcode38TextFontPath = "./fonts/ttf/libre-barcode-39-text-latin-400-normal.ttf";
 
 const run = async () => {
   const pdfBytes = fs.readFileSync(inputPath);
-  const fontBytes = fs.readFileSync(fontPath);
+  const openSansFontBytes = fs.readFileSync(openSansFontPath);
+  const libreBarcode38TextBytes = fs.readFileSync(libreBarcode38TextFontPath);
   const pdfDoc = await PDFDocument.load(pdfBytes);
 
-  // ✅ Register fontkit here
   pdfDoc.registerFontkit(fontkit);
 
   const form = pdfDoc.getForm();
-  const embeddedFont = await pdfDoc.embedFont(fontBytes, { subset: false });
+  const openSans = await pdfDoc.embedFont(openSansFontBytes, { subset: false });
+  const libreBarcode38Text = await pdfDoc.embedFont(libreBarcode38TextBytes, {
+    subset: false,
+  });
 
   const fields = form.getFields();
 
   for (const field of fields) {
     const name = field.getName();
+
     const type = field.constructor.name;
 
     try {
       if (type === "PDFTextField") {
         const value = field.getText();
+        ``;
+        const fontToEmbed = checkIfBarcode(value) ? libreBarcode38Text : openSans;
         field.setText(value);
-        field.updateAppearances(embeddedFont);
+        field.updateAppearances(fontToEmbed);
       }
 
       if (type === "PDFCheckBox") {
