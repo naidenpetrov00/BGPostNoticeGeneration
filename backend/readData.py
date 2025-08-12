@@ -1,3 +1,4 @@
+from io import StringIO
 import pandas as pd
 import os
 from typing import List
@@ -38,3 +39,19 @@ def readExcelFiles() -> List[pd.DataFrame]:
                 print(e)
 
     return result
+
+def read_temp_file(name)-> pd.DataFrame:
+    try:
+        df = pd.read_excel(name)
+        print(df.head())
+        return df[[
+                    caseNumberProp,
+                    recieverProp,
+                    adressProp,
+                    documentNumber,
+                    debtorName,
+                    outDate,
+                ]]
+    except Exception as e:
+        print(f"Error reading file")
+        print(e)
