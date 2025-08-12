@@ -1,62 +1,93 @@
-import { useCallback, useState, type ChangeEvent } from "react";
+import { useCallback, useState, type SetStateAction } from "react";
 
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { Box, Button, Chip, Stack } from "@mui/material";
+import { Box, Button, Paper, Stack, Typography } from "@mui/material";
 import type { UploadStatus } from "../../../../types/file";
 import { fileUploaderStyles } from "./FileUploader.styles";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, type FileRejection } from "react-dropzone";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import {
+  ACCEPTED,
+  mapRejectionMessage,
+  MAX_SIZE_BYTES,
+} from "../../../../config/files";
+import UploadedFiles from "../UploadedFiles";
+import FileDropError from "../FileDropError";
 
 const FileUploader = () => {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    console.log(acceptedFiles);
+  const [errors, setErrors] = useState<string[]>([]);
+  const onDrop = useCallback((acceptedFiles: SetStateAction<File | null>[]) => {
+    setFile(acceptedFiles[0]);
+    setErrors([]);
   }, []);
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setFile(event.target.files[0]);
-    }
-  };
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+    const msgs = fileRejections.flatMap(mapRejectionMessage);
+    setErrors(msgs);
+    setFile(null);
+  }, []);
 
-  const handleFileUpload = async () => {
-    if (!file) return;
-    setStatus("uploading");
-    const formData = new FormData();
-    formData.append("file", file);
-    //TODO: Attach the progress to the axios file stream uploader
-  };
+  const {
+    getRootProps,
+    getInputProps,
+    isDragActive,
+    isDragAccept,
+    isDragReject,
+    open,
+  } = useDropzone({
+    onDrop,
+    onDropRejected,
+    accept: ACCEPTED,
+    maxFiles: 1,
+    multiple: false,
+    maxSize: MAX_SIZE_BYTES,
+    noClick: true,
+  });
 
   return (
     <Box sx={fileUploaderStyles.container}>
-      <Stack {...getRootProps()}>
-        {/* <input type="file" onChange={handleFileChange} /> */}
-        <input {...getInputProps()} />
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          {file ? (
-            <Chip
-              label={file.name}
-              //   onDelete={clearFile}
-              deleteIcon={<DeleteOutlineIcon />}
-            />
-          ) : (
-            <Chip label="No file selected" />
+      <Stack spacing={2}>
+        <Paper
+          variant="outlined"
+          {...getRootProps()}
+          sx={fileUploaderStyles.dropzone(
+            isDragActive,
+            isDragReject,
+            isDragAccept
           )}
-          
+        >
+          <input {...getInputProps()} />
+          <CloudUploadIcon fontSize="large" />
+          <Typography variant="h6" sx={fileUploaderStyles.caption}>
+            {isDragActive
+              ? "Drop the file here"
+              : "Drag & drop a file here or click to browse"}
+          </Typography>
           <Button
-            onClick={handleFileUpload}
+            onClick={open}
+            sx={fileUploaderStyles.browseButton}
             variant="contained"
-            disabled={status == "uploading" || !file}
           >
-            {status == "uploading" ? "Uploading..." : "Upload"}
+            Browse files
           </Button>
-        </Stack>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            sx={fileUploaderStyles.caption}
+          >
+            Max size 25MB.
+          </Typography>
+        </Paper>
+
+        <UploadedFiles
+          file={file}
+          setErrors={setErrors}
+          setStatus={setStatus}
+          setFile={setFile}
+          status={status}
+        />
+        {errors.length > 0 && <FileDropError errors={errors} />}
       </Stack>
     </Box>
   );

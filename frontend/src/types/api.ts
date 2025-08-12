@@ -17,7 +17,7 @@ export type User = Entity<{
   firstName: string;
   lastName: string;
   email: string;
-  role: 'ADMIN' | 'USER';
+  role: "ADMIN" | "USER";
   teamId: string;
   bio: string;
 }>;
@@ -44,3 +44,5 @@ export type Comment = Entity<{
   discussionId: string;
   author: User;
 }>;
+
+export type ResultPdf = Blob;
