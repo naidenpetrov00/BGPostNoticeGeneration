@@ -23,17 +23,19 @@ const UploadFiles = ({
   const sendCsvMutation = useSendCSV({
     mutationConfig: {
       onSuccess(data) {
-        console.log('success');
-        const url = window.URL.createObjectURL(data);
+        const fileUrl = `${import.meta.env.VITE_APP_API_URL}${
+          data.download_url
+        }?t=${Date.now()}`;
         const link = document.createElement("a");
-        link.href = url;
+        link.href = fileUrl;
         link.download = "notices_and_envelopes.zip";
-        console.log(`links created ${link}`);
+        document.body.appendChild(link);
         link.click();
-        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
         setStatus("success");
       },
       onError(error: Error) {
+        setStatus("error");
         setErrors([error.message]);
       },
     },

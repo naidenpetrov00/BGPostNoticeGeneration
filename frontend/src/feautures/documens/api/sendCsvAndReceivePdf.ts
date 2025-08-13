@@ -1,5 +1,5 @@
 import type { MutationConfig } from "../../../lib/reactQuery";
-import type { ResultPdf } from "../../../types/api";
+// import type { ResultPdf } from "../../../types/api";
 import { api } from "../../../lib/api-client";
 import { useMutation } from "@tanstack/react-query";
 import z from "zod";
@@ -14,13 +14,13 @@ export const sendCsvAndReceivePdf = async ({
   data,
 }: {
   data: SendCsvInput;
-}): Promise<ResultPdf> => {
+}): Promise<{download_url: string }> => {
   const formData = new FormData();
   formData.append("file", data.file);
 
   const response = await api.post("/process-csv", formData, {
     headers: { "Content-Type": "multipart/form-data" },
-    responseType: "blob",
+    // responseType: "blob",
   });
 
   return response.data;
