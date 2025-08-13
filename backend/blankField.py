@@ -22,13 +22,6 @@ class BlankFields:
         current_doc = row[readData.documentNumber]
         out_date = row[readData.outDate].split("/")[-1]
         document_number = f"*{out_date}-{current_doc}*"
-        print("------------ Barcode Info ------------")
-        print("идентификатор на услугата: " + barcode.post_id)
-        print("идентификатор на голям клиент: " + barcode.client_id)
-        print("пореден уникален номер: " + barcode.unique_number)
-        print("контролно число: " + str(barcode.control_number))
-        print(barcode.get_full_barcode())
-        print("--------------------------------------")
 
         if prev_row_doc_number is None:
             doc_info = f"{current_doc}"

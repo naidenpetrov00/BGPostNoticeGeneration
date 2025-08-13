@@ -1,14 +1,18 @@
+import os
 import shutil
 import tempfile
 import zipfile
 
+from generate import generate_notice
 from readData import read_temp_file
-from generateNoticeEnvelopes import generateNotice
 from fastapi import File, UploadFile,FastAPI
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse,JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+STATIC_FOLDER = os.path.join(os.getcwd(), "static")
+os.makedirs(STATIC_FOLDER, exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,16 +32,18 @@ async def process_csv(file:UploadFile = File(...)):
 
     file = read_temp_file(temp_file.name)
 
-    notice_pdf_path, envelope_pdf_path,protocol_path = await generateNotice(file,mode="single")
+    generate_result = generate_notice(file)
 
+    print(f"Generated:{generate_result}")
+
+    zip_filename = f"notices_and_envelopes_{int(os.path.getmtime(temp_file.name))}.zip"
     zip_path = tempfile.NamedTemporaryFile(delete=False, suffix=".zip").name
     with zipfile.ZipFile(zip_path, "w") as zipf:
-        zipf.write(notice_pdf_path, arcname="notices.pdf")
-        zipf.write(envelope_pdf_path, arcname="envelopes.pdf")
-        zipf.write(protocol_path, arcname="protocol.xlsx")
+        zipf.write(generate_result.notices_merged, arcname="notices.pdf")
+        zipf.write(generate_result.envelopes_merged, arcname="envelopes.pdf")
+        zipf.write(generate_result.protocol_excel, arcname="protocol.xlsx")
 
-    return StreamingResponse(
-        open(zip_path, "rb"),
-        media_type="application/zip",
-        headers={"Content-Disposition": "attachment; filename=notices_and_envelopes.zip"},
-    )
+    print("Zipped")
+
+    download_url = f"/static/{zip_filename}"
+    return JSONResponse({"download_url": download_url})

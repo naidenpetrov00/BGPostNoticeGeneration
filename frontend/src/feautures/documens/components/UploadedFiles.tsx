@@ -23,10 +23,12 @@ const UploadFiles = ({
   const sendCsvMutation = useSendCSV({
     mutationConfig: {
       onSuccess(data) {
+        console.log('success');
         const url = window.URL.createObjectURL(data);
         const link = document.createElement("a");
         link.href = url;
         link.download = "notices_and_envelopes.zip";
+        console.log(`links created ${link}`);
         link.click();
         window.URL.revokeObjectURL(url);
         setStatus("success");
