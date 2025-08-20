@@ -18,7 +18,7 @@ export const sendCsvAndReceivePdf = async ({
   const formData = new FormData();
   formData.append("file", data.file);
 
-  const response = await api.post("/process-csv", formData, {
+  const response = await api.post("/api/process-csv", formData, {
     headers: { "Content-Type": "multipart/form-data" },
     // responseType: "blob",
   });

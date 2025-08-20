@@ -3,6 +3,7 @@ import { Button, Chip, Stack } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { SetStateAction } from "react";
 import type { UploadStatus } from "../../../types/file";
+import { env } from "../../../config/env";
 import { useSendCSV } from "../api/sendCsvAndReceivePdf";
 
 interface UploadFile {
@@ -23,7 +24,7 @@ const UploadFiles = ({
   const sendCsvMutation = useSendCSV({
     mutationConfig: {
       onSuccess(data) {
-        const fileUrl = `${import.meta.env.VITE_APP_API_URL}${
+        const fileUrl = `${env.API_URL?.trim()}${
           data.download_url
         }?t=${Date.now()}`;
         const link = document.createElement("a");

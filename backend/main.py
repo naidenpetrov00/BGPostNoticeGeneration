@@ -5,8 +5,8 @@ import zipfile
 
 from generate import generate_notice
 from readData import read_temp_file
-from fastapi import File, UploadFile,FastAPI
-from fastapi.responses import StreamingResponse,JSONResponse
+from fastapi import File, HTTPException, UploadFile,FastAPI
+from fastapi.responses import FileResponse, StreamingResponse,JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -16,18 +16,28 @@ STATIC_FOLDER = os.path.join(os.getcwd(), "static")
 os.makedirs(STATIC_FOLDER, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=STATIC_FOLDER), name="static")
+app.mount("/assets", StaticFiles(directory="public/assets"), name="assets")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["http://localhost:5173"],  
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
-@app.post("/process-csv")
+# SPA fallback so /anything returns index.html (except /api/*)
+@app.get("/", include_in_schema=False)
+@app.get("/{full_path:path}", include_in_schema=False)
+def spa_fallback(full_path: str = ""):
+    index_path = "public/index.html"
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    raise HTTPException(status_code=404, detail="UI not built yet")
+
+@app.post("/api/process-csv")
 async def process_csv(file:UploadFile = File(...)):
-    suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx"
+    suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx" # type: ignore
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
 
     with open(temp_file.name, "wb") as buffer:

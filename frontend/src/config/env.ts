@@ -2,7 +2,9 @@ import * as z from "zod";
 
 const createEnv = () => {
   const EnvSchema = z.object({
-    API_URL: z.string(),
+    // Optional: leave empty in prod to use same-origin
+    API_URL: z.string().optional().default(""),
+    // Optional boolean flag (string in Vite -> boolean here)
     ENABLE_API_MOCKING: z
       .string()
       .refine((s) => s === "true" || s === "false")
@@ -12,26 +14,22 @@ const createEnv = () => {
     APP_MOCK_API_PORT: z.string().optional().default("8080"),
   });
 
+  // Only read Vite-exposed vars prefixed with VITE_APP_
   const envVars = Object.entries(import.meta.env).reduce<
     Record<string, string>
-  >((acc, curr) => {
-    const [key, value] = curr;
-    if (key.startsWith("VITE_APP_")) {
-      acc[key.replace("VITE_APP_", "")] = value;
-    }
+  >((acc, [key, value]) => {
+    if (key.startsWith("VITE_APP_"))
+      acc[key.replace("VITE_APP_", "")] = value as string;
     return acc;
   }, {});
 
   const parsedEnv = EnvSchema.safeParse(envVars);
-
   if (!parsedEnv.success) {
     throw new Error(
-      `Invalid env provided.
-The following variables are missing or invalid:
-${Object.entries(parsedEnv.error.flatten().fieldErrors)
-  .map(([k, v]) => `- ${k}: ${v}`)
-  .join("\n")}
-`
+      `Invalid env provided.\nThe following variables are missing or invalid:\n` +
+        Object.entries(parsedEnv.error.flatten().fieldErrors)
+          .map(([k, v]) => `- ${k}: ${v}`)
+          .join("\n")
     );
   }
 

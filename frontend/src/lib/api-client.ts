@@ -1,6 +1,4 @@
-import Axios, {
-  type InternalAxiosRequestConfig,
-} from "axios";
+import Axios, { type InternalAxiosRequestConfig } from "axios";
 
 import { env } from "../config/env";
 
@@ -13,7 +11,9 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
 }
 
 export const api = Axios.create({
-  baseURL: env.API_URL,
+  baseURL:
+    env.API_URL?.trim() ||
+    (import.meta.env.PROD ? "" : "http://localhost:8080"),
 });
 
 api.interceptors.request.use(authRequestInterceptor);
