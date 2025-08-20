@@ -1,7 +1,7 @@
 from datetime import date
 from pathlib import Path
 import subprocess
-from pypdf import  PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 
 def create_single_page_pdf(input_path, output_path, page_index=0):
@@ -55,36 +55,35 @@ def regen_appearances_batch(processed_paths: list[str]):
             subprocess.run(
                 ["node", str(BATCH_JS), *processed_paths],
                 check=True,
-                cwd=str(JS_DIR), 
+                cwd=str(JS_DIR),
             )
             print(f"Regenerated appearances for {len(processed_paths)} PDFs")
         except subprocess.CalledProcessError as e:
             print(f"Batch regeneration failed: {e}")
 
 
-def merge_pdfs(pdf_paths: list[str], out_path: str):
-    if not pdf_paths:
-        return
-    merger = PdfWriter()
-    for p in pdf_paths:
-        merger.append(str(p),import_bookmarks=False, import_form_fields=False) # type: ignore
-    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "wb") as f:
-        merger.write(f) # type: ignore
-    merger.close() # type: ignore
-
 # def merge_pdfs(pdf_paths: list[str], out_path: str):
 #     if not pdf_paths:
 #         return
-#     writer = PdfWriter()
-
-#     for i, p in enumerate(pdf_paths):
-#         reader = PdfReader(p)
-#         # Give this document's fields a unique prefix: form0001., form0002., ...
-#         reader.add_form_topname(f"form{i:04d}")
-#         # Append pages + import their (now uniquely named) form fields
-#         writer.append(reader, import_bookmarks=False, import_form_fields=True)
-
+#     merger = PdfWriter()
+#     for p in pdf_paths:
+#         merger.append(str(p)) # type: ignore
 #     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
 #     with open(out_path, "wb") as f:
-#         writer.write(f)
+#         merger.write(f) # type: ignore
+#     merger.close() # type: ignore
+
+
+def merge_pdfs(pdf_paths: list[str], out_path: str):
+    if not pdf_paths:
+        return
+    writer = PdfWriter()
+
+    for i, p in enumerate(pdf_paths):
+        reader = PdfReader(p)
+        reader.add_form_topname(f"form{i:04d}")
+        writer.append(reader)
+
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "wb") as f:
+        writer.write(f)

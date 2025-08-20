@@ -16,8 +16,8 @@ import readData
 
 async def generateNotice(file,mode):
 
-    blank_path = "./blanks/243_Open_Sans_v2.pdf"
-    envelope_path = "./blanks/Letter_C5_v3.pdf"
+    # blank_path = "./blanks/243_Open_Sans_v2.pdf"
+    # envelope_path = "./blanks/Letter_C5_v3.pdf"
 
     output_folder = "./notices"
     envelope_output_folder = "./envelopes"

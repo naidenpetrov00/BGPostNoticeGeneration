@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Tuple
 import logging
 import pandas as pd
 from pandas import Series
+from config.paths import Paths, paths  
 from pypdf import PdfReader, PdfWriter
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -26,13 +27,6 @@ LOG = logging.getLogger(__name__)
 class Mode(str, Enum):
     SINGLE = "single"
     PAIR = "pair"
-
-@dataclass(frozen=True)
-class Paths:
-    blank_template: Path
-    envelope_template: Path
-    notices_dir: Path
-    envelopes_dir: Path
 
 @dataclass
 class GenerateResult:
@@ -70,12 +64,6 @@ def _protocol_row(row: Series, barcode: BarCode, address_first_line: str) -> Dic
     }
 
 def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateResult:
-    paths = Paths(
-        blank_template=Path("./blanks/243_Open_Sans_v2.pdf"),
-        envelope_template=Path("./blanks/Letter_C5_v3.pdf"),
-        notices_dir=Path("./notices"),
-        envelopes_dir=Path("./envelopes"),
-    )
     _ensure_dirs(paths)
 
     # Preload templates once
@@ -159,12 +147,12 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
             notice_w.update_page_form_field_values(
                 notice_w.pages[0],
                 blank_fields.getFieldValues(row, barcode),
-                auto_regenerate=False,
+                # auto_regenerate=False,
             )
             env_w.update_page_form_field_values(
                 env_w.pages[0],
                 envelope_fields.getFieldValues(row, barcode),
-                auto_regenerate=False,
+                # auto_regenerate=False,
             )
             write_to_pdf(notice_w, str(out_notice))
             write_to_pdf(env_w, str(out_env))
