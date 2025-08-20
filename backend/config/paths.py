@@ -8,7 +8,7 @@ class Paths:
     envelopes_dir: Path
 
 paths = Paths(
-        blank_template=Path("./blanks/243_Open_Sans_v2.pdf"),
+        blank_template=Path("./blanks/243_form_working_v6.pdf"),
         envelope_template=Path("./blanks/Letter_C5_v3.pdf"),
         notices_dir=Path("./notices"),
         envelopes_dir=Path("./envelopes"),

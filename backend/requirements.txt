@@ -2,3 +2,5 @@ pypdf
 pandas
 reportlab
 openpyxl
+uvicorn
+fastapi[standard]

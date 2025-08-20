@@ -181,7 +181,7 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
                     pending_row_for_pair.get(readData.documentNumber))
 
     # Regenerate appearances after all writes
-    regen_appearances_batch(notice_paths + envelope_paths)
+    # regen_appearances_batch(notice_paths + envelope_paths)
 
     # Merge outputs
     notices_merged = paths.notices_dir / f"notices_ALL_{timestamp}.pdf"
