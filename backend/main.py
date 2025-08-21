@@ -3,11 +3,11 @@ import shutil
 import tempfile
 import zipfile
 
+from utils import client_ip, resolve_office_for_ip
 from generate import generate_notice
 from readData import read_temp_file
-from fastapi import File, HTTPException, UploadFile,FastAPI
-from fastapi.responses import FileResponse, StreamingResponse,JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import File, HTTPException, Request, UploadFile, FastAPI
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
@@ -20,11 +20,12 @@ app.mount("/assets", StaticFiles(directory="public/assets"), name="assets")
 
 # app.add_middleware(
 #     CORSMiddleware,
-#     allow_origins=["http://localhost:5173"],  
+#     allow_origins=["http://localhost:5173"],
 #     allow_credentials=True,
 #     allow_methods=["*"],
 #     allow_headers=["*"],
 # )
+
 
 # SPA fallback so /anything returns index.html (except /api/*)
 @app.get("/", include_in_schema=False)
@@ -35,10 +36,14 @@ def spa_fallback(full_path: str = ""):
         return FileResponse(index_path)
     raise HTTPException(status_code=404, detail="UI not built yet")
 
+
 @app.post("/api/process-csv")
-async def process_csv(file:UploadFile = File(...)):
-    suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx" # type: ignore
+async def process_csv(request: Request, file: UploadFile = File(...)):
+    suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx"  # type: ignore
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    office = getattr(request.state, "office", None)
+    print("office")
+    print(office)
 
     with open(temp_file.name, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -60,3 +65,24 @@ async def process_csv(file:UploadFile = File(...)):
 
     download_url = f"/static/{zip_filename}"
     return JSONResponse({"download_url": download_url})
+
+
+@app.middleware("http")
+async def whitelist_middleware(request: Request, call_next):
+    path = request.url.path
+    # Protect API; leave static assets and SPA routes public
+    if path.startswith("/api/"):
+        ip_str = client_ip(request)
+        office = resolve_office_for_ip(ip_str)
+        print("ip_str")
+        print(ip_str)
+        print("office")
+        print(office)
+        if not office:
+            return JSONResponse(
+                {"detail": "Forbidden: IP not allowed", "ip": ip_str},
+                status_code=403,
+            )
+        # Stash for later use in your endpoint
+        request.state.office = office
+    return await call_next(request)

@@ -209,3 +209,6 @@ __marimo__/
 **/envelopes/
 **/documents/
 **/static/
+
+.env.development
+.env.production

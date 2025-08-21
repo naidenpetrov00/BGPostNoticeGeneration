@@ -87,3 +87,52 @@ def merge_pdfs(pdf_paths: list[str], out_path: str):
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "wb") as f:
         writer.write(f)
+
+import os, json, ipaddress
+from typing import Dict, List, Tuple, Optional
+from fastapi import Request, HTTPException
+
+def parse_office_ips() -> List[Tuple[str, List[ipaddress._BaseNetwork]]]:
+    raw = os.getenv("OFFICE_IPS", "").strip()
+    if not raw:
+        return []
+    try:
+        conf: Dict[str, List[str]] = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Invalid OFFICE_IPS JSON: {e}")
+    offices: List[Tuple[str, List[ipaddress._BaseNetwork]]] = []
+    for office, entries in conf.items():
+        nets = []
+        for item in entries:
+            item = item.strip()
+            # ip_network handles both IP and CIDR if strict=False
+            nets.append(ipaddress.ip_network(item, strict=False))
+        offices.append((office, nets))
+    return offices  # keep insertion order (first match wins)
+
+TRUST_PROXY = os.getenv("TRUST_PROXY", "false").lower() == "true"
+
+def client_ip(request: Request) -> str:
+    """Get real client IP (trust X-Forwarded-For only if behind a known proxy)."""
+    if TRUST_PROXY:
+        xff = request.headers.get("x-forwarded-for")
+        if xff:
+            # first IP in the list is the original client
+            return xff.split(",")[0].strip()
+        xrip = request.headers.get("x-real-ip")
+        if xrip:
+            return xrip.strip()
+    # fallback to socket peer
+    return request.client.host if request.client else "0.0.0.0"
+
+def resolve_office_for_ip(ip_str: str) -> Optional[str]:
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return None
+    OFFICE_NETWORKS = parse_office_ips()
+    for office, nets in OFFICE_NETWORKS:
+        for net in nets:
+            if ip in net:
+                return office
+    return None
