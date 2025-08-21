@@ -32,7 +32,7 @@ class BlankFields:
         return {
             self.RECEIVER_GENERAL_INFO: generalInfo,
             self.ADDRESS: row[readData.adressProp],
-            self.SENDER: self.sender,
+            # self.SENDER: self.sender,
             self.SENDER_ADDRESS: self.sender_address,
             self.SENDER_CITY: self.sender_city,
             self.DOCUMENT_NUMBER: document_number,

@@ -1,12 +1,12 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import logging
 import pandas as pd
 from pandas import Series
-from config.paths import Paths, paths  
+from enums import Mode
+from config.paths import Paths, paths
 from pypdf import PdfReader, PdfWriter
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -14,7 +14,6 @@ from zoneinfo import ZoneInfo
 from utils import (
     log_the_last_number,
     merge_pdfs,
-    regen_appearances_batch,
     write_to_pdf,
 )
 from barcode import BarCode
@@ -24,9 +23,6 @@ import readData
 
 LOG = logging.getLogger(__name__)
 
-class Mode(str, Enum):
-    SINGLE = "single"
-    PAIR = "pair"
 
 @dataclass
 class GenerateResult:
@@ -34,24 +30,35 @@ class GenerateResult:
     envelopes_merged: Path
     protocol_excel: Path
 
+
 def _now_sofia_str() -> str:
     # For filenames (safe) and display (keep both if you want)
     return datetime.now(ZoneInfo("Europe/Sofia")).strftime("%Y-%m-%d_%H-%M-%S")
+
 
 def _ensure_dirs(paths: Paths) -> None:
     paths.notices_dir.mkdir(parents=True, exist_ok=True)
     paths.envelopes_dir.mkdir(parents=True, exist_ok=True)
 
-def _new_writers(blank_reader: PdfReader, env_reader: PdfReader) -> Tuple[PdfWriter, PdfWriter]:
-    notice = PdfWriter(); notice.append(blank_reader)
-    env = PdfWriter(); env.append(env_reader)
+
+def _new_writers(
+    blank_reader: PdfReader, env_reader: PdfReader
+) -> Tuple[PdfWriter, PdfWriter]:
+    notice = PdfWriter()
+    notice.append(blank_reader)
+    env = PdfWriter()
+    env.append(env_reader)
     return notice, env
+
 
 def _row_has_address(row: Series) -> bool:
     val = row.get(readData.adressProp)  # keep external name but treat as "address"
     return isinstance(val, str) and val.strip() != ""
 
-def _protocol_row(row: Series, barcode: BarCode, address_first_line: str) -> Dict[str, str]:
+
+def _protocol_row(
+    row: Series, barcode: BarCode, address_first_line: str
+) -> Dict[str, str]:
     number = "Товарителница"
     date_prop = "Дата"
     return {
@@ -62,6 +69,7 @@ def _protocol_row(row: Series, barcode: BarCode, address_first_line: str) -> Dic
         number: barcode.get_barcode_text(),
         # sender & date are added once outside into row 0/metadata if you prefer
     }
+
 
 def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateResult:
     _ensure_dirs(paths)
@@ -97,8 +105,11 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
 
     for i, (index, row) in enumerate(file.iterrows()):
         if not _row_has_address(row):
-            LOG.warning("Missing address for case=%s doc=%s",
-                        row.get(readData.caseNumberProp), row.get(readData.documentNumber))
+            LOG.warning(
+                "Missing address for case=%s doc=%s",
+                row.get(readData.caseNumberProp),
+                row.get(readData.documentNumber),
+            )
             continue
 
         # File paths
@@ -164,9 +175,11 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
 
     # Handle dangling first-of-pair
     if mode == Mode.PAIR and pending_row_for_pair is not None:
-        LOG.warning("Odd number of rows – last item in PAIR mode had no partner: case=%s doc=%s",
-                    pending_row_for_pair.get(readData.caseNumberProp),
-                    pending_row_for_pair.get(readData.documentNumber))
+        LOG.warning(
+            "Odd number of rows – last item in PAIR mode had no partner: case=%s doc=%s",
+            pending_row_for_pair.get(readData.caseNumberProp),
+            pending_row_for_pair.get(readData.documentNumber),
+        )
 
     # Regenerate appearances after all writes
     # regen_appearances_batch(notice_paths + envelope_paths)
@@ -183,8 +196,12 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
     if protocol_header:
         # Make a first row with sender/date, keep columns consistent
         hdr = {c: "" for c in protocol_df.columns}
-        hdr.update({sender_col: protocol_header.get(sender_col, ""),
-                    date_col: protocol_header.get(date_col, "")})
+        hdr.update(
+            {
+                sender_col: protocol_header.get(sender_col, ""),
+                date_col: protocol_header.get(date_col, ""),
+            }
+        )
         protocol_df = pd.concat([pd.DataFrame([hdr]), protocol_df], ignore_index=True)
 
     protocol_path = paths.notices_dir / f"noticesTable_{timestamp}.xlsx"

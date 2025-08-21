@@ -41,14 +41,11 @@ def spa_fallback(full_path: str = ""):
 async def process_csv(request: Request, file: UploadFile = File(...)):
     suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx"  # type: ignore
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-    office = getattr(request.state, "office", None)
-    print("office")
-    print(office)
 
     with open(temp_file.name, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    file_df = read_temp_file(temp_file.name)
+    file_df = read_temp_file(request, temp_file.name)
 
     generate_result = generate_notice(file_df)
 
