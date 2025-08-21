@@ -25,6 +25,7 @@ def log_the_last_number():
 
     today = date.today().isoformat()
     new_line = f"{today}: {number}\n"
+    print(f"Last Number: {number}")
 
     with open(last_number_log_path, "a") as a:
         a.write(new_line)
