@@ -3,7 +3,13 @@ import shutil
 import tempfile
 import zipfile
 
-from utils import client_ip, resolve_office_for_ip
+from config.paths import paths
+from utils import (
+    clean_dir_contents,
+    client_ip,
+    delete_file_later,
+    resolve_office_for_ip,
+)
 from generate import generate_notice
 from readData import read_temp_file
 from fastapi import File, HTTPException, Request, UploadFile, FastAPI
@@ -39,6 +45,7 @@ def spa_fallback(full_path: str = ""):
 
 @app.post("/api/process-csv")
 async def process_csv(request: Request, file: UploadFile = File(...)):
+    clean_dir_contents(paths.static)
     suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx"  # type: ignore
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
 
@@ -59,6 +66,9 @@ async def process_csv(request: Request, file: UploadFile = File(...)):
         zipf.write(generate_result.protocol_excel, arcname="protocol.xlsx")
 
     print("Zipped")
+
+    clean_dir_contents(paths.notices_dir)
+    clean_dir_contents(paths.envelopes_dir)
 
     download_url = f"/static/{zip_filename}"
     return JSONResponse({"download_url": download_url})

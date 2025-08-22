@@ -1,5 +1,6 @@
 from datetime import date
 from pathlib import Path
+import shutil
 import subprocess
 from pypdf import PdfReader, PdfWriter
 
@@ -89,9 +90,11 @@ def merge_pdfs(pdf_paths: list[str], out_path: str):
     with open(out_path, "wb") as f:
         writer.write(f)
 
+
 import os, json, ipaddress
 from typing import Dict, List, Tuple, Optional
 from fastapi import Request, HTTPException
+
 
 def parse_office_ips() -> List[Tuple[str, List[ipaddress._BaseNetwork]]]:
     raw = os.getenv("OFFICE_IPS", "").strip()
@@ -111,7 +114,9 @@ def parse_office_ips() -> List[Tuple[str, List[ipaddress._BaseNetwork]]]:
         offices.append((office, nets))
     return offices  # keep insertion order (first match wins)
 
+
 TRUST_PROXY = os.getenv("TRUST_PROXY", "false").lower() == "true"
+
 
 def client_ip(request: Request) -> str:
     """Get real client IP (trust X-Forwarded-For only if behind a known proxy)."""
@@ -126,6 +131,7 @@ def client_ip(request: Request) -> str:
     # fallback to socket peer
     return request.client.host if request.client else "0.0.0.0"
 
+
 def resolve_office_for_ip(ip_str: str) -> Optional[str]:
     try:
         ip = ipaddress.ip_address(ip_str)
@@ -137,3 +143,34 @@ def resolve_office_for_ip(ip_str: str) -> Optional[str]:
             if ip in net:
                 return office
     return None
+
+
+def clean_dir_contents(path: str | Path):
+    p = Path(path)
+    if not p.exists():
+        print(f"No path to delete {path}")
+        return
+    for child in p.iterdir():
+        if child.is_file() or child.is_symlink():
+            try:
+                child.unlink(missing_ok=True)
+            except Exception:
+                pass
+        elif child.is_dir():
+            shutil.rmtree(child, ignore_errors=True)
+
+
+def remove_file(path: str | Path):
+    try:
+        Path(path).unlink()
+    except FileNotFoundError:
+        pass
+    except Exception:
+        pass
+
+
+def delete_file_later(path: str | Path, delay: int = 180):
+    import time
+
+    time.sleep(delay)
+    remove_file(path)
