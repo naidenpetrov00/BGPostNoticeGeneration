@@ -2,8 +2,8 @@ from fastapi import Request
 import pandas as pd
 import os
 from typing import List
-
 from enums import Offices
+import blankField
 
 folder_path = "./documents"
 caseNumberProp = "Дело №"
@@ -59,6 +59,9 @@ def read_temp_file(request: Request, name) -> pd.DataFrame:
 def read_temp_file_841(name) -> pd.DataFrame:
     try:
         df = pd.read_excel(name)
+        blankField.sender_name = "ЧСИ - Неделчо Митев рег.№ 841 тел.: 0700 20 841"
+        blankField.sender_address = "1000 София бул.Княз Александър Дондуков №:11"
+        blankField.sender_city = "София"
         print(df.head())
         return df[
             [
@@ -79,6 +82,9 @@ def read_temp_file_841(name) -> pd.DataFrame:
 def read_temp_file_870(name) -> pd.DataFrame:
     try:
         df = pd.read_excel(name)
+        blankField.sender_name = "ЧСИ - Иван Стръмски рег.№ 870 тел.: 042 621087"
+        blankField.sender_address = "гр. Стара Загора, бул. Руски № 26, ет.3"
+        blankField.sender_city = "Стара Загора"
         print(df.head())
         return df[
             [
@@ -100,14 +106,14 @@ BP_PATTERN = r"(?i)(?:\u0411|B)\s*(?:\u041F|P)"
 
 
 def read_temp_file_910(path: str) -> pd.DataFrame:
-    # 1) read
     df = pd.read_excel(path, dtype=str)
+    blankField.sender_name = "ЧСИ - Росен Раев рег.№ 910 тел.: 032 397050"
+    blankField.sender_address = "гр. Стара Загора, бул. Руски № 26, ет.3"
+    blankField.sender_city = "Пловдив"
 
-    # 2) keep only rows where "Бележки" contains "БП"
     notes = df["Бележки"].fillna("").astype(str)
     df = df[notes.str.contains(BP_PATTERN, regex=True, na=False)].copy()
 
-    # 3) rename straight into your props
     df = df.rename(
         columns={
             "No дело": caseNumberProp,
@@ -117,21 +123,17 @@ def read_temp_file_910(path: str) -> pd.DataFrame:
         }
     )
 
-    # 4) debtorName = same as receiver (change if you want another source)
     # df[debtorName] = df[recieverProp]
 
-    # 5) outDate from "Дата" -> dd.mm.yyyy
     df[outDate] = (
         pd.to_datetime(df["Дата"], dayfirst=True, errors="coerce")
         .dt.strftime("%d/%m/%Y")
         .fillna("")
     )
 
-    # 6) if "Адрес" column didn’t exist, ensure your prop exists
     if adressProp not in df.columns:
         df[adressProp] = ""
 
-    # 7) return only needed columns (in order)
     return df[
         [
             caseNumberProp,
