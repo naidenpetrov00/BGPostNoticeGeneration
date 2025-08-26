@@ -3,6 +3,7 @@ import shutil
 import tempfile
 import zipfile
 
+from enums import PairMode
 from config.paths import paths
 from utils import (
     clean_dir_contents,
@@ -12,7 +13,7 @@ from utils import (
 )
 from generate import generate_notice
 from readData import read_temp_file
-from fastapi import File, HTTPException, Request, UploadFile, FastAPI
+from fastapi import File, Form, HTTPException, Request, UploadFile, FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -44,17 +45,18 @@ def spa_fallback(full_path: str = ""):
 
 
 @app.post("/api/process-csv")
-async def process_csv(request: Request, file: UploadFile = File(...)):
+async def process_csv(
+    request: Request, file: UploadFile = File(...), mode: PairMode = Form(...)
+):
     clean_dir_contents(paths.static)
     suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx"  # type: ignore
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-
     with open(temp_file.name, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     file_df = read_temp_file(request, temp_file.name)
 
-    generate_result = generate_notice(file_df)
+    generate_result = generate_notice(file_df, mode)
 
     print(f"Generated:{generate_result}")
 

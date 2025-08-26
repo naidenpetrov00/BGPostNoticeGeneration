@@ -1,4 +1,4 @@
-import FileUploader from "../../../feautures/documens/components/FileDrop/FileUploader";
+import FileUploader from "../../../feautures/documents/components/FileDrop/FileUploader";
 
 const HomePage = () => {
   return <FileUploader />;

@@ -7,6 +7,7 @@ class Offices(Enum):
     ROSEN = "910"
 
 
-class Mode(str, Enum):
-    SINGLE = "single"
-    PAIR = "pair"
+class PairMode(str, Enum):
+    single = "single"
+    pair = "pair"
+    compact = "compact"

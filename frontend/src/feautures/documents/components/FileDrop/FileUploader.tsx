@@ -1,7 +1,7 @@
 import { useCallback, useState, type SetStateAction } from "react";
 
 import { Box, Button, Paper, Stack, Typography } from "@mui/material";
-import type { UploadStatus } from "../../../../types/file";
+import { PairMode, type UploadStatus } from "../../../../types/file";
 import { fileUploaderStyles } from "./FileUploader.styles";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -12,11 +12,13 @@ import {
 } from "../../../../config/files";
 import UploadedFiles from "../UploadedFiles";
 import FileDropError from "../FileDropError";
+import GenerateModePicker from "./GenerateModePicker";
 
 const FileUploader = () => {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [errors, setErrors] = useState<string[]>([]);
+  const [pairMode, setPairMode] = useState<PairMode>(PairMode.single);
   const onDrop = useCallback((acceptedFiles: SetStateAction<File | null>[]) => {
     setFile(acceptedFiles[0]);
     setErrors([]);
@@ -72,16 +74,17 @@ const FileUploader = () => {
           </Button>
           <Typography
             variant="caption"
-            color="text.secondary"
             display="block"
             sx={fileUploaderStyles.caption}
           >
             Max size 25MB.
           </Typography>
+          <GenerateModePicker pairMode={pairMode} setPairMode={setPairMode} />
         </Paper>
 
         <UploadedFiles
           file={file}
+          pairMode={pairMode}
           setErrors={setErrors}
           setStatus={setStatus}
           setFile={setFile}

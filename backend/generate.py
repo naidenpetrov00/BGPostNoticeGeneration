@@ -5,7 +5,7 @@ from typing import List, Dict, Optional, Tuple
 import logging
 import pandas as pd
 from pandas import Series
-from enums import Mode
+from enums import PairMode
 from config.paths import Paths, paths
 from pypdf import PdfReader, PdfWriter
 from datetime import datetime
@@ -32,7 +32,6 @@ class GenerateResult:
 
 
 def _now_sofia_str() -> str:
-    # For filenames (safe) and display (keep both if you want)
     return datetime.now(ZoneInfo("Europe/Sofia")).strftime("%Y-%m-%d_%H-%M-%S")
 
 
@@ -52,7 +51,7 @@ def _new_writers(
 
 
 def _row_has_address(row: Series) -> bool:
-    val = row.get(readData.adressProp)  # keep external name but treat as "address"
+    val = row.get(readData.adressProp)
     return isinstance(val, str) and val.strip() != ""
 
 
@@ -67,14 +66,14 @@ def _protocol_row(
         readData.adressProp: address_first_line,
         readData.outDate: row[readData.outDate],
         number: barcode.get_barcode_text(),
-        # sender & date are added once outside into row 0/metadata if you prefer
     }
 
 
-def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateResult:
+def generate_notice(
+    file: pd.DataFrame, mode: PairMode = PairMode.single
+) -> GenerateResult:
     _ensure_dirs(paths)
 
-    # Preload templates once
     blank_reader = PdfReader(str(paths.blank_template))
     env_reader = PdfReader(str(paths.envelope_template))
 
@@ -82,10 +81,8 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
     blank_fields = BlankFields()
     envelope_fields = EnvelopeField()
 
-    # Build protocol rows in memory
     protocol_rows: List[Dict[str, str]] = []
 
-    # Prepare output tracking
     notice_paths: List[str] = []
     envelope_paths: List[str] = []
 
@@ -94,7 +91,6 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
     date_col = "Дата"
     number_col = "Товарителница"
 
-    # Metadata first row (optional)
     protocol_header = {
         sender_col: getattr(blank_fields, "sender", ""),
         date_col: datetime.now(ZoneInfo("Europe/Sofia")).strftime("%d.%m.%Y %H:%M:%S"),
@@ -112,19 +108,16 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
             )
             continue
 
-        # File paths
         case_number = row[readData.caseNumberProp]
         out_notice = paths.notices_dir / f"{index}_{case_number}.pdf"
         out_env = paths.envelopes_dir / f"{index}_{case_number}_envelope.pdf"
 
-        # Pair logic
-        if mode == Mode.PAIR:
+        if mode == PairMode.pair:
             if pending_row_for_pair is None:
                 pending_row_for_pair = row
                 prev_pair_doc_number = row[readData.documentNumber]
                 continue
             else:
-                # We have a pair: use current row + previous document number
                 curr = row
                 barcode = BarCode()
 
@@ -132,12 +125,12 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
                 notice_w.update_page_form_field_values(
                     notice_w.pages[0],
                     blank_fields.getFieldValues(curr, barcode, prev_pair_doc_number),
-                    auto_regenerate=False,
+                    # auto_regenerate=False,
                 )
                 env_w.update_page_form_field_values(
                     env_w.pages[0],
                     envelope_fields.getFieldValues(curr, barcode),
-                    auto_regenerate=False,
+                    # auto_regenerate=False,
                 )
 
                 write_to_pdf(notice_w, str(out_notice))
@@ -148,11 +141,9 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
                 addr_first = str(curr[readData.adressProp]).split(";")[0]
                 protocol_rows.append(_protocol_row(curr, barcode, addr_first))
 
-                # clear pair state
                 pending_row_for_pair = None
                 prev_pair_doc_number = None
         else:
-            # SINGLE mode
             barcode = BarCode()
             notice_w, env_w = _new_writers(blank_reader, env_reader)
             notice_w.update_page_form_field_values(
@@ -173,28 +164,22 @@ def generate_notice(file: pd.DataFrame, mode: Mode = Mode.SINGLE) -> GenerateRes
             addr_first = str(row[readData.adressProp]).split(";")[0]
             protocol_rows.append(_protocol_row(row, barcode, addr_first))
 
-    # Handle dangling first-of-pair
-    if mode == Mode.PAIR and pending_row_for_pair is not None:
+    if mode == PairMode.pair and pending_row_for_pair is not None:
         LOG.warning(
             "Odd number of rows – last item in PAIR mode had no partner: case=%s doc=%s",
             pending_row_for_pair.get(readData.caseNumberProp),
             pending_row_for_pair.get(readData.documentNumber),
         )
 
-    # Regenerate appearances after all writes
     # regen_appearances_batch(notice_paths + envelope_paths)
 
-    # Merge outputs
     notices_merged = paths.notices_dir / f"notices_ALL_{timestamp}.pdf"
     envelopes_merged = paths.envelopes_dir / f"envelopes_ALL_{timestamp}.pdf"
     merge_pdfs(notice_paths, str(notices_merged))
     merge_pdfs(envelope_paths, str(envelopes_merged))
 
-    # Protocol Excel
-    # Put metadata in first row if desired:
     protocol_df = pd.DataFrame(protocol_rows)
     if protocol_header:
-        # Make a first row with sender/date, keep columns consistent
         hdr = {c: "" for c in protocol_df.columns}
         hdr.update(
             {

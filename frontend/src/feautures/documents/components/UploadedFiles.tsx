@@ -1,14 +1,15 @@
 import { Button, Chip, Stack } from "@mui/material";
+import type { PairMode, UploadStatus } from "../../../types/file";
 
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { SetStateAction } from "react";
-import type { UploadStatus } from "../../../types/file";
 import { env } from "../../../config/env";
 import { useSendCSV } from "../api/sendCsvAndReceivePdf";
 
 interface UploadFile {
   file: File | null;
   status: UploadStatus;
+  pairMode: PairMode;
   setStatus: React.Dispatch<SetStateAction<UploadStatus>>;
   setErrors: React.Dispatch<SetStateAction<string[]>>;
   setFile: React.Dispatch<SetStateAction<File | null>>;
@@ -17,6 +18,7 @@ interface UploadFile {
 const UploadFiles = ({
   file,
   status,
+  pairMode,
   setStatus,
   setErrors,
   setFile,
@@ -45,7 +47,7 @@ const UploadFiles = ({
   const handleFileUpload = async () => {
     if (!file) return;
     setStatus("uploading");
-    sendCsvMutation.mutate({ data: { file } });
+    sendCsvMutation.mutate({ data: { file, pairMode } });
   };
 
   const clearFile = () => {
