@@ -5,3 +5,5 @@ openpyxl
 odfpy
 uvicorn
 fastapi[standard]
+requests
+python-dotenv
