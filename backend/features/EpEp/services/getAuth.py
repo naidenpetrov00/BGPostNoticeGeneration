@@ -8,6 +8,7 @@ import hashlib
 from datetime import datetime
 import json
 
+from models.auth import Auth
 from config.paths import EpEpPaths
 
 
@@ -21,8 +22,9 @@ def get_auth_token():
     body = generate_hash()
     response = requests.post(EpEpPaths.GetToken, headers=headers, data=body)
     response.raise_for_status()
+    auth_response = response.json()
 
-    return response.json()
+    Auth(auth_response["token"], auth_response["expiresIn"])
 
 
 def generate_hash():

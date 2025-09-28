@@ -8,10 +8,10 @@ class PaymentDto(BaseModel):
     gid: UUID
     obligationGid: UUID
     debtorGid: UUID
-    paymentDate: Optional[datetime]  
+    paymentDate: Optional[datetime]
     amount: float
     currencyCode: str
-    description: str
+    description: Optional[str]
 
 
 class FileDto(BaseModel):
@@ -28,10 +28,10 @@ class ExecCaseDto(BaseModel):
     userName: str
     stateCode: str
     stateName: str
-    listDeliveryDate: Optional[datetime]  
-    redirect427Date: Optional[datetime]  
-    listTerminateDate: Optional[datetime]  
-    caseTerminateDate: Optional[datetime]  
+    listDeliveryDate: Optional[datetime]
+    redirect427Date: Optional[datetime]
+    listTerminateDate: Optional[datetime]
+    caseTerminateDate: Optional[datetime]
     payments: List[PaymentDto]
     files: List[FileDto]
 
@@ -39,7 +39,7 @@ class ExecCaseDto(BaseModel):
 class SideDto(BaseModel):
     gid: UUID
     subjectKind: int
-    sideUic: Optional[str]  
+    sideUic: Optional[str]
     sideName: str
     sideRoleCode: str
     sideRoleName: str
@@ -57,8 +57,8 @@ class ObligationDto(BaseModel):
     beneficiaryGid: UUID
     amount: float
     currencyCode: str
-    statutoryInterestDate: Optional[datetime]  
-    description: Optional[str]  
+    statutoryInterestDate: Optional[datetime]
+    description: Optional[str]
     debtors: List[UUID]
 
 
@@ -97,17 +97,17 @@ class GetExecProcessByIdResponse(BaseModel):
     courtName: str
     actNumber: int
     actDate: datetime
-    orderNumber: Optional[int]  
-    orderDate: Optional[datetime]  
+    orderNumber: Optional[int]
+    orderDate: Optional[datetime]
     execCases: List[ExecCaseDto]
     isExpired: bool
     caseGid: UUID
     actGid: UUID
     actFileId: UUID
-    orderFileId: Optional[UUID]  
+    orderFileId: Optional[UUID]
     hasCorrectedAct: bool
     jointDistribution: bool
-    infoExpired: Optional[str]  
+    infoExpired: Optional[str]
     sideList: List[SideDto]
     obligationList: List[ObligationDto]
     accessList: List[AccessDto]

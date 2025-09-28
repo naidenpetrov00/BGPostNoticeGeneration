@@ -2,7 +2,6 @@ import os
 import string
 
 
-
 class BarCode:
 
     def _int_to_base36(self, num, width=6):
@@ -49,7 +48,6 @@ class BarCode:
         alphabet = string.digits + string.ascii_uppercase
         return alphabet[remainder]
 
-
     def _get_barcode_for_control_number(self):
         return f"{self.post_id}{self.client_id}{self.unique_number}"
 
@@ -63,7 +61,7 @@ class BarCode:
         return (
             f"*{self.post_id}{self.client_id}{self.unique_number}{self.control_number}*"
         )
-    
+
     def get_barcode_text(self):
         return (
             f"{self.post_id}{self.client_id}{self.unique_number}{self.control_number}"
