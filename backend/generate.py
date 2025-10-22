@@ -6,7 +6,7 @@ import logging
 import pandas as pd
 from pandas import Series
 from enums import PairMode
-from config.paths import Paths, paths
+from config.paths import Paths, getEnvelopePath, paths
 from pypdf import PdfReader, PdfWriter
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -62,6 +62,7 @@ def _protocol_row(
     date_prop = "Дата"
     return {
         readData.documentNumber: row[readData.documentNumber],
+        readData.caseNumberProp: row[readData.caseNumberProp],
         readData.recieverProp: row[readData.recieverProp],
         readData.adressProp: address_first_line,
         readData.outDate: row[readData.outDate],
@@ -70,14 +71,14 @@ def _protocol_row(
 
 
 def generate_notice(
-    file: pd.DataFrame, mode: PairMode = PairMode.single
+    file: pd.DataFrame, office, mode: PairMode = PairMode.single
 ) -> GenerateResult:
     _ensure_dirs(paths)
 
     blank_reader = PdfReader(str(paths.blank_template))
-    env_reader = PdfReader(str(paths.envelope_template))
+    env_reader = PdfReader(str(getEnvelopePath(office)))
 
-    # Setup field providers
+    # Setup field providers.enums
     blank_fields = BlankFields()
     envelope_fields = EnvelopeField()
 
