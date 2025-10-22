@@ -1,8 +1,8 @@
 from fastapi import Request
 import pandas as pd
 import os
-from typing import List
-from enums import Offices
+from typing import Any, List
+from enums import Offices, PairMode
 import blankField
 
 folder_path = "./documents"
@@ -43,20 +43,22 @@ def readExcelFiles() -> List[pd.DataFrame]:
     return result
 
 
-def read_temp_file(request: Request, name) -> pd.DataFrame:
+def read_temp_file(
+    request: Request, name, mode: PairMode
+) -> tuple[pd.DataFrame, Any | None]:
     office = getattr(request.state, "office", None)
     if office == Offices.NEDELCHO.value:
-        return read_temp_file_841(name)
+        return read_temp_file_841(name, mode), office
     elif office == Offices.STRAMSKI.value:
-        return read_temp_file_870(name)
+        return read_temp_file_870(name, mode), office
     elif office == Offices.ROSEN.value:
-        return read_temp_file_910(name)
+        return read_temp_file_910(name, mode), office
     else:
         print(f"There is not such office in our system")
-        return pd.DataFrame()
+        return pd.DataFrame(), office
 
 
-def read_temp_file_841(name) -> pd.DataFrame:
+def read_temp_file_841(name, mode: PairMode) -> pd.DataFrame:
     try:
         df = pd.read_excel(name)
         blankField.sender_name = "ЧСИ - Неделчо Митев рег.№ 841 тел.: 0700 20 841"
@@ -79,20 +81,47 @@ def read_temp_file_841(name) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def read_temp_file_870(name) -> pd.DataFrame:
+def read_temp_file_870(name, mode: PairMode) -> pd.DataFrame:
     try:
         df = pd.read_excel(name)
         blankField.sender_name = "ЧСИ - Иван Стръмски рег.№ 870 тел.: 042 621087"
         blankField.sender_address = "гр. Стара Загора, бул. Руски № 26, ет.3"
         blankField.sender_city = "Стара Загора"
-        print(df.head())
+
+        df = df[df["Вх./Изх."] != "ВХОДЯЩ"]
+        df = df[df["Получено /Изпратено/ чрез"] == "Български пощи"]
+        df[caseNumberProp] = (
+            df["Дело година"].astype(float).astype(int).astype(str)
+            + "87004"
+            + df["Дело №"].astype(float).astype(int).astype(str).str.zfill(5)
+        )
+
+        df = df.rename(
+            columns={
+                # "Дело №": caseNumberProp,
+                "Изпратено на / Получено от": recieverProp,
+                "Изпратено на адрес / Получено от": adressProp,  # if the file has no "Адрес", we fill it below
+                "№": documentNumber,
+                "Дата": outDate,
+            }
+        )
+
+        if mode == PairMode.compact:
+            df = df.groupby([recieverProp, adressProp], as_index=False).agg(
+                {
+                    documentNumber: lambda x: ", ".join(x.astype(str)),
+                    caseNumberProp: lambda x: ", ".join(x.astype(str)),
+                    outDate: "first",
+                }
+            )
+        print(df.head(100))
         return df[
             [
                 caseNumberProp,
                 recieverProp,
                 adressProp,
                 documentNumber,
-                debtorName,
+                # debtorName,
                 outDate,
             ]
         ]
@@ -105,7 +134,7 @@ def read_temp_file_870(name) -> pd.DataFrame:
 BP_PATTERN = r"(?i)(?:\u0411|B)\s*(?:\u041F|P)"
 
 
-def read_temp_file_910(path: str) -> pd.DataFrame:
+def read_temp_file_910(path: str, mode: PairMode) -> pd.DataFrame:
     df = pd.read_excel(path, dtype=str)
     blankField.sender_name = "ЧСИ - Росен Раев рег.№ 910 тел.: 032 397050"
     blankField.sender_address = "гр. Стара Загора, бул. Руски № 26, ет.3"

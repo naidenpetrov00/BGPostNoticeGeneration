@@ -54,9 +54,9 @@ async def process_csv(
     with open(temp_file.name, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    file_df = read_temp_file(request, temp_file.name)
+    file_df, office = read_temp_file(request, temp_file.name, mode)
 
-    generate_result = generate_notice(file_df, mode)
+    generate_result = generate_notice(file_df, office, mode)
 
     print(f"Generated:{generate_result}")
 

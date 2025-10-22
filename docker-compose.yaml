@@ -6,5 +6,7 @@ services:
     container_name: BgPostNoticeGeneration_Container
     ports:
       - "5341:5341"          
-    env_file::
-      - ./backend/.env
+    environment:
+      PORT: "5341"
+      OFFICE_IPS: '{"841": ["0.0.0.0"], "870": ["192.168.65.1"], "910": ["0.0.0.0"]}'
+      TRUST_PROXY: "true"
