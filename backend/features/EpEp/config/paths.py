@@ -1,5 +1,7 @@
 BASE_URL = "https://ecase-api-test.justice.bg/api/v2/"
 
+CASEMAPPINGSPATH = "./config/case_mappings/case_mapping.csv"
+
 
 class EpEpPaths:
     GetToken = f"{BASE_URL}Auth/GetToken"

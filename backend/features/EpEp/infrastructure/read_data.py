@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from pandas import DataFrame
+from infrastructure.case_mapping import attach_case_ids
 from config import (
     ALLOCATED_AMOUNT_COL,
     ALLOCATION_DATE_COL,
@@ -17,9 +18,7 @@ def read_documents() -> DataFrame:
     for filename in os.listdir(DOCUMENTS_FOLDER_PATH):
         file_path = os.path.join(DOCUMENTS_FOLDER_PATH, filename)
         print(f"Processing file: {filename}")
-        df = pd.read_excel(
-            file_path,
-        )
+        df = pd.read_excel(file_path, dtype={CASE_NUMBER_COL: "string"})
 
         cleaned_df = pd.DataFrame(
             {
@@ -32,5 +31,6 @@ def read_documents() -> DataFrame:
         )
 
         frames.append(cleaned_df)
-
-    return pd.concat(frames, ignore_index=True)
+    df = pd.concat(frames, ignore_index=True)
+    df = attach_case_ids(df)
+    return df
