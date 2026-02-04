@@ -1,8 +1,10 @@
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 import shutil
 import subprocess
+from fastapi.staticfiles import StaticFiles
 from pypdf import PdfReader, PdfWriter
+from config.paths import paths
 
 
 def create_single_page_pdf(input_path, output_path, page_index=0):
@@ -93,7 +95,7 @@ def merge_pdfs(pdf_paths: list[str], out_path: str):
 
 import os, json, ipaddress
 from typing import Dict, List, Tuple, Optional
-from fastapi import Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException
 
 
 def parse_office_ips() -> List[Tuple[str, List[ipaddress._BaseNetwork]]]:
@@ -158,6 +160,7 @@ def clean_dir_contents(path: str | Path):
                 pass
         elif child.is_dir():
             shutil.rmtree(child, ignore_errors=True)
+        print("Deleted" + child.as_uri())
 
 
 def remove_file(path: str | Path):
@@ -174,3 +177,18 @@ def delete_file_later(path: str | Path, delay: int = 180):
 
     time.sleep(delay)
     remove_file(path)
+
+
+def mout_assets(app: FastAPI):
+    STATIC_FOLDER = os.path.join(os.getcwd(), "static")
+    ASSET_FOLDER = os.path.join(os.getcwd(), "public/assets")
+    os.makedirs(STATIC_FOLDER, exist_ok=True)
+    os.makedirs(ASSET_FOLDER, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=STATIC_FOLDER), name="static")
+    app.mount("/assets", StaticFiles(directory=ASSET_FOLDER), name="assets")
+    return STATIC_FOLDER
+
+
+def cleanup_task():
+    clean_dir_contents(paths.static)
+    print(f"Cleanup done at {datetime.now()}")

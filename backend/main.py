@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from datetime import datetime
 import os
 import shutil
 import tempfile
@@ -7,34 +9,35 @@ from enums import PairMode
 from config.paths import paths
 from utils import (
     clean_dir_contents,
+    cleanup_task,
     client_ip,
-    delete_file_later,
+    mout_assets,
     resolve_office_for_ip,
 )
 from generate import generate_notice
 from readData import read_temp_file
 from fastapi import File, Form, HTTPException, Request, UploadFile, FastAPI
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-
-app = FastAPI()
-
-STATIC_FOLDER = os.path.join(os.getcwd(), "static")
-os.makedirs(STATIC_FOLDER, exist_ok=True)
-
-app.mount("/static", StaticFiles(directory=STATIC_FOLDER), name="static")
-app.mount("/assets", StaticFiles(directory="public/assets"), name="assets")
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:5173"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
-# SPA fallback so /anything returns index.html (except /api/*)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        cleanup_task, trigger="cron", hour=22, minute=2
+    )
+    scheduler.start()
+    print("start lifespan")
+    yield
+    scheduler.shutdown()
+    print("stop lifespan")
+
+
+app = FastAPI(lifespan=lifespan)
+mout_assets(app)
+
+
 @app.get("/", include_in_schema=False)
 @app.get("/{full_path:path}", include_in_schema=False)
 def spa_fallback(full_path: str = ""):
@@ -48,8 +51,7 @@ def spa_fallback(full_path: str = ""):
 async def process_csv(
     request: Request, file: UploadFile = File(...), mode: PairMode = Form(...)
 ):
-    clean_dir_contents(paths.static)
-    suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx"  # type: ignore
+    suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx"
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     with open(temp_file.name, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -61,7 +63,7 @@ async def process_csv(
     print(f"Generated:{generate_result}")
 
     zip_filename = f"notices_and_envelopes_{int(os.path.getmtime(temp_file.name))}.zip"
-    zip_path = os.path.join(STATIC_FOLDER, zip_filename)
+    zip_path = os.path.join(paths.static, zip_filename)
     with zipfile.ZipFile(zip_path, "w") as zipf:
         zipf.write(generate_result.notices_merged, arcname="notices.pdf")
         zipf.write(generate_result.envelopes_merged, arcname="envelopes.pdf")

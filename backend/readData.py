@@ -100,7 +100,7 @@ def read_temp_file_870(name, mode: PairMode) -> pd.DataFrame:
             columns={
                 # "Дело №": caseNumberProp,
                 "Изпратено на / Получено от": recieverProp,
-                "Изпратено на адрес / Получено от": adressProp,  # if the file has no "Адрес", we fill it below
+                "Изпратено на адрес / Получено от": adressProp,  
                 "№": documentNumber,
                 "Дата": outDate,
             }
@@ -147,7 +147,7 @@ def read_temp_file_910(path: str, mode: PairMode) -> pd.DataFrame:
         columns={
             "No дело": caseNumberProp,
             "Адресат": recieverProp,
-            "Адрес": adressProp,  # if the file has no "Адрес", we fill it below
+            "Адрес": adressProp,  
             "Изх.No": documentNumber,
         }
     )
