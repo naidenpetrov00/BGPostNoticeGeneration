@@ -15,14 +15,16 @@ class Paths:
     static: Path
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 paths = Paths(
-    blank_template=Path("./blanks/243_form_bigger_field_v7.pdf"),
-    envelope_template=Path("./blanks/Letter_C5_v3.pdf"),
-    envelope_template_870=Path("./blanks/Letter870.pdf"),
-    envelope_template_910=Path("./blanks/Letter910.pdf"),
-    notices_dir=Path("./notices"),
-    envelopes_dir=Path("./envelopes"),
-    static=Path("./static"),
+    blank_template=BASE_DIR / "blanks/243_form_bigger_field_v7.pdf",
+    envelope_template=BASE_DIR / "blanks/Letter_C5_v3.pdf",
+    envelope_template_870=BASE_DIR / "blanks/Letter870.pdf",
+    envelope_template_910=BASE_DIR / "blanks/Letter910.pdf",
+    notices_dir=BASE_DIR / "notices",
+    envelopes_dir=BASE_DIR / "envelopes",
+    static=BASE_DIR / "static",
 )
 
 

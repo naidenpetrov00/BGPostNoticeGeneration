@@ -1,12 +1,14 @@
 from contextlib import asynccontextmanager
-from datetime import datetime
 import os
 import shutil
 import tempfile
 import zipfile
 
+from dotenv import load_dotenv
+from starlette.middleware.cors import CORSMiddleware
+
 from enums import PairMode
-from config.paths import paths
+from config.paths import BASE_DIR, paths
 from utils import (
     clean_dir_contents,
     cleanup_task,
@@ -21,12 +23,13 @@ from fastapi.responses import FileResponse, JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
+load_dotenv(BASE_DIR / ".env", override=False)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        cleanup_task, trigger="cron", hour=22, minute=2
-    )
+    scheduler.add_job(cleanup_task, trigger="cron", hour=22, minute=2)
     scheduler.start()
     print("start lifespan")
     yield
@@ -37,6 +40,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 mout_assets(app)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/", include_in_schema=False)
 @app.get("/{full_path:path}", include_in_schema=False)
@@ -51,6 +61,7 @@ def spa_fallback(full_path: str = ""):
 async def process_csv(
     request: Request, file: UploadFile = File(...), mode: PairMode = Form(...)
 ):
+    print("Entry")
     suffix = ".xls" if file.filename.endswith(".xls") else ".xlsx"
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     with open(temp_file.name, "wb") as buffer:
@@ -63,7 +74,8 @@ async def process_csv(
     print(f"Generated:{generate_result}")
 
     zip_filename = f"notices_and_envelopes_{int(os.path.getmtime(temp_file.name))}.zip"
-    zip_path = os.path.join(paths.static, zip_filename)
+    paths.static.mkdir(parents=True, exist_ok=True)
+    zip_path = paths.static / zip_filename
     with zipfile.ZipFile(zip_path, "w") as zipf:
         zipf.write(generate_result.notices_merged, arcname="notices.pdf")
         zipf.write(generate_result.envelopes_merged, arcname="envelopes.pdf")
@@ -75,6 +87,7 @@ async def process_csv(
     clean_dir_contents(paths.envelopes_dir)
 
     download_url = f"/static/{zip_filename}"
+    print("Exit")
     return JSONResponse({"download_url": download_url})
 
 

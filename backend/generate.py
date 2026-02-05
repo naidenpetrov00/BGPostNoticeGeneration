@@ -102,11 +102,11 @@ def generate_notice(
 
     for i, (index, row) in enumerate(file.iterrows()):
         if not _row_has_address(row):
-            LOG.warning(
-                "Missing address for case=%s doc=%s",
-                row.get(readData.caseNumberProp),
-                row.get(readData.documentNumber),
-            )
+            # LOG.warning(
+            #     "Missing address for case=%s doc=%s",
+            #     row.get(readData.caseNumberProp),
+            #     row.get(readData.documentNumber),
+            # )
             continue
 
         case_number = row[readData.caseNumberProp]

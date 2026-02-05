@@ -4,7 +4,7 @@ import shutil
 import subprocess
 from fastapi.staticfiles import StaticFiles
 from pypdf import PdfReader, PdfWriter
-from config.paths import paths
+from config.paths import BASE_DIR, paths
 
 
 def create_single_page_pdf(input_path, output_path, page_index=0):
@@ -160,8 +160,6 @@ def clean_dir_contents(path: str | Path):
                 pass
         elif child.is_dir():
             shutil.rmtree(child, ignore_errors=True)
-        print("Deleted" + child.as_uri())
-
 
 def remove_file(path: str | Path):
     try:
@@ -180,13 +178,13 @@ def delete_file_later(path: str | Path, delay: int = 180):
 
 
 def mout_assets(app: FastAPI):
-    STATIC_FOLDER = os.path.join(os.getcwd(), "static")
-    ASSET_FOLDER = os.path.join(os.getcwd(), "public/assets")
-    os.makedirs(STATIC_FOLDER, exist_ok=True)
-    os.makedirs(ASSET_FOLDER, exist_ok=True)
-    app.mount("/static", StaticFiles(directory=STATIC_FOLDER), name="static")
-    app.mount("/assets", StaticFiles(directory=ASSET_FOLDER), name="assets")
-    return STATIC_FOLDER
+    static_folder = BASE_DIR / "static"
+    asset_folder = BASE_DIR / "public" / "assets"
+    os.makedirs(static_folder, exist_ok=True)
+    os.makedirs(asset_folder, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=str(static_folder)), name="static")
+    app.mount("/assets", StaticFiles(directory=str(asset_folder)), name="assets")
+    return str(static_folder)
 
 
 def cleanup_task():

@@ -6,3 +6,4 @@ odfpy
 uvicorn
 fastapi[standard]
 apscheduler
+python-dotenv
