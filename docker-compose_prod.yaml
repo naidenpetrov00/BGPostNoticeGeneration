@@ -8,7 +8,7 @@ services:
       - "5341:5341"          
     environment:
       PORT: "5341"
-      OFFICE_IPS: '{"841": ["192.168.100.201", "192.168.100.182"], "910": ["192.168.65.1"], "870": ["2001:4860:7:1708::fd"]}'
+      OFFICE_IPS: '{"841": ["192.168.100.201", "192.168.100.182", "192.168.100.213", "172.20.10.4"], "910": ["192.168.65.1"], "870": ["95.43.125.221"]}'
       TRUST_PROXY: "true"
     volumes:
       - /share/Container/BGPostNoticeGenerationUpload/backend/config:/app/config
