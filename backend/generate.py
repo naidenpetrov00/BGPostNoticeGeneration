@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
+import hashlib
+import re
 import logging
 import pandas as pd
 from pandas import Series
@@ -48,6 +50,16 @@ def _new_writers(
     env = PdfWriter()
     env.append(env_reader)
     return notice, env
+
+
+def _safe_filename_stem(index: int, case_number: object, max_len: int = 120) -> str:
+    raw = f"{index}_{case_number}"
+    safe = re.sub(r"[^\w.-]+", "_", str(raw)).strip("_.")
+    if len(safe) <= max_len:
+        return safe
+    digest = hashlib.sha256(str(raw).encode("utf-8")).hexdigest()[:10]
+    trimmed = safe[: max_len - (len(digest) + 1)].rstrip("_.")
+    return f"{trimmed}_{digest}"
 
 
 def _row_has_address(row: Series) -> bool:
@@ -110,8 +122,9 @@ def generate_notice(
             continue
 
         case_number = row[readData.caseNumberProp]
-        out_notice = paths.notices_dir / f"{index}_{case_number}.pdf"
-        out_env = paths.envelopes_dir / f"{index}_{case_number}_envelope.pdf"
+        safe_stem = _safe_filename_stem(index, case_number)
+        out_notice = paths.notices_dir / f"{safe_stem}.pdf"
+        out_env = paths.envelopes_dir / f"{safe_stem}_envelope.pdf"
 
         if mode == PairMode.pair:
             if pending_row_for_pair is None:
