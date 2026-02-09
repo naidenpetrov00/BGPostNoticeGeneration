@@ -13,6 +13,7 @@ recieverProp = "Получател"
 adressProp = "Адрес"
 debtorName = "Към длъжник"
 sender = "Изпращач"
+receiptProp = "Обратна разписка"
 
 
 def readExcelFiles() -> List[pd.DataFrame]:
@@ -96,6 +97,15 @@ def read_temp_file_870(name, mode: PairMode) -> pd.DataFrame:
             + df["Дело №"].astype(float).astype(int).astype(str).str.zfill(5)
         )
 
+        if "Бележки" in df.columns:
+            notes = df["Бележки"].fillna("").astype(str)
+            df[receiptProp] = notes.str.contains(
+                "с обратна разписка", case=False, na=False
+            )
+            df[receiptProp] = df[receiptProp].map(lambda v: "ДА" if v else "")
+        else:
+            df[receiptProp] = ""
+
         df = df.rename(
             columns={
                 # "Дело №": caseNumberProp,
@@ -112,6 +122,7 @@ def read_temp_file_870(name, mode: PairMode) -> pd.DataFrame:
                     documentNumber: lambda x: ", ".join(x.astype(str)),
                     caseNumberProp: lambda x: ", ".join(x.astype(str)),
                     outDate: "first",
+                    receiptProp: "first",
                 }
             )
         print(df.head(100))
@@ -123,6 +134,7 @@ def read_temp_file_870(name, mode: PairMode) -> pd.DataFrame:
                 documentNumber,
                 # debtorName,
                 outDate,
+                receiptProp,
             ]
         ]
     except Exception as e:

@@ -78,6 +78,7 @@ def _protocol_row(
         readData.recieverProp: row[readData.recieverProp],
         readData.adressProp: address_first_line,
         readData.outDate: row[readData.outDate],
+        readData.receiptProp: row.get(readData.receiptProp, ""),
         number: barcode.get_barcode_text(),
     }
 
@@ -86,6 +87,13 @@ def generate_notice(
     file: pd.DataFrame, office, mode: PairMode = PairMode.single
 ) -> GenerateResult:
     _ensure_dirs(paths)
+
+    if readData.receiptProp in file.columns:
+        file = file.copy()
+        file[readData.receiptProp] = file[readData.receiptProp].fillna("")
+        file = file.sort_values(
+            by=readData.receiptProp, ascending=False, kind="stable"
+        )
 
     blank_reader = PdfReader(str(paths.blank_template))
     env_reader = PdfReader(str(getEnvelopePath(office)))
@@ -193,12 +201,23 @@ def generate_notice(
     merge_pdfs(envelope_paths, str(envelopes_merged))
 
     protocol_df = pd.DataFrame(protocol_rows)
+    if not protocol_df.empty and readData.receiptProp in protocol_df.columns:
+        protocol_df = protocol_df.sort_values(
+            by=readData.receiptProp, ascending=False, kind="stable"
+        )
+    if not protocol_df.empty:
+        protocol_df.insert(0, "№", range(1, len(protocol_df) + 1))
+        if readData.receiptProp in protocol_df.columns:
+            receipt_col = protocol_df.pop(readData.receiptProp)
+            protocol_df.insert(1, readData.receiptProp, receipt_col)
     if protocol_header:
         hdr = {c: "" for c in protocol_df.columns}
         hdr.update(
             {
                 sender_col: protocol_header.get(sender_col, ""),
                 date_col: protocol_header.get(date_col, ""),
+                "№": "",
+                readData.receiptProp: "",
             }
         )
         protocol_df = pd.concat([pd.DataFrame([hdr]), protocol_df], ignore_index=True)
