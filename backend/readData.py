@@ -100,7 +100,7 @@ def read_temp_file_870(name, mode: PairMode) -> pd.DataFrame:
         if "Бележки" in df.columns:
             notes = df["Бележки"].fillna("").astype(str)
             df[receiptProp] = notes.str.contains(
-                "с обратна разписка", case=False, na=False
+                "обратна разписка", case=False, na=False
             )
             df[receiptProp] = df[receiptProp].map(lambda v: "ДА" if v else "")
         else:
